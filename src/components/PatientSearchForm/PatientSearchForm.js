@@ -57,7 +57,6 @@ const customSelectStyles = {
 };
 
 // --- Componente ---
-// 1. AÑADIMOS 'resetTrigger' a los props que recibe el componente
 const PatientSearchForm = ({ onSearch, resetTrigger }) => {
   const [rut, setRut] = useState('');
   const [isForeigner, setIsForeigner] = useState(false);
@@ -65,7 +64,7 @@ const PatientSearchForm = ({ onSearch, resetTrigger }) => {
   const [selectedCountry, setSelectedCountry] = useState(null);
   const [isLoadingCountries, setIsLoadingCountries] = useState(false);
 
-  // Carga de países (Sin cambios)
+  // Carga de países
   useEffect(() => {
     const fetchCountries = async () => {
       setIsLoadingCountries(true);
@@ -73,7 +72,7 @@ const PatientSearchForm = ({ onSearch, resetTrigger }) => {
         const data = await getCountries(); 
         if (data && data.data) {
           const mappedCountries = data.data.map(c => ({ 
-            value: c.isonum, 
+            value: c.isonum, // <-- El 'value' es el isonum
             label: c.nombre 
           }));
           setCountries(mappedCountries);
@@ -90,21 +89,22 @@ const PatientSearchForm = ({ onSearch, resetTrigger }) => {
     fetchCountries();
   }, []);
 
-  // --- 2. AÑADIMOS el useEffect que limpia el input ---
+  // useEffect para limpiar el input (Sin cambios)
   useEffect(() => {
-    // Si resetTrigger cambia (y no es la primera vez que se monta), limpiamos
-    // Usamos resetTrigger > 0 para evitar que se limpie en el montaje inicial si resetKey empieza en 0
     if (resetTrigger > 0) { 
-        console.log("Reset Trigger detectado en PatientSearchForm, limpiando RUT."); // DEBUG
-        setRut(''); // Limpia el input del RUT/DNI
-        setIsForeigner(false); // Opcional: Desmarcar "Extranjero"
-        setSelectedCountry(null); // Opcional: Limpiar país seleccionado
+      console.log("Reset Trigger detectado en PatientSearchForm, limpiando RUT."); // DEBUG
+      setRut(''); 
+      setIsForeigner(false); 
+      setSelectedCountry(null); 
     }
-  }, [resetTrigger]); // Dependencia: se ejecuta si resetTrigger cambia
-  // ----------------------------------------------------
+  }, [resetTrigger]); 
 
+  // --- ¡¡FUNCIÓN MODIFICADA!! ---
   const handleSearchClick = (e) => {
     e.preventDefault(); 
+    
+    // 1. Validación (Esta lógica ya es correcta)
+    // Solo valida si NO es extranjero
     if (!isForeigner && !validateRut(rut)) {
       MySwal.fire({
         title: 'RUT Inválido',
@@ -114,7 +114,18 @@ const PatientSearchForm = ({ onSearch, resetTrigger }) => {
       });
       return; 
     }
-    onSearch(rut, isForeigner, selectedCountry);
+
+    // 2. Lógica para crear el identificador final
+    let identifierToSearch = rut; // Valor por defecto
+
+    // Si es extranjero Y ha seleccionado un país...
+    if (isForeigner && selectedCountry) {
+        // ...anexamos el 'isonum' (guardado en 'value')
+        identifierToSearch = rut + selectedCountry.value;
+    }
+
+    // 3. Llamar a onSearch con el identificador (modificado o no)
+    onSearch(identifierToSearch, isForeigner, selectedCountry);
   };
 
   return (
@@ -124,7 +135,7 @@ const PatientSearchForm = ({ onSearch, resetTrigger }) => {
       <Input 
         type="text" 
         placeholder="Ingresar cédula de identidad, pasaporte o DNI"
-        value={rut} // El valor sigue controlado por el estado 'rut'
+        value={rut} 
         onChange={(e) => setRut(e.target.value)}
         required
         autoFocus 
