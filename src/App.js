@@ -9,8 +9,9 @@ import MainLayout from './layouts/MainLayout';
 import LoginPage from './pages/LoginPage/LoginPage';
 import DashboardPage from './pages/DashboardPage/DashboardPage';
 import AgendaPage from './pages/AgendaPage/AgendaPage';
+import AccionesPage from './pages/AccionesPage/AccionesPage'; // <-- 1. IMPORTAR
 
-// Estilos globales completos
+// Estilos globales completos (Sin cambios)
 const GlobalStyle = createGlobalStyle`
   :root {
     --primary-color: #5A67D8;
@@ -60,7 +61,20 @@ function App() {
               </ProtectedRoute>
             } 
           />
+
           {/* Aquí añadirías las otras rutas que usen el MainLayout, ej: /buscador-citas */}
+          <Route 
+            path="/acciones/:id" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <AccionesPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+          {/* ------------------------------------- */}
+
 
           {/* Ruta por defecto: redirige a /login */}
           <Route path="/" element={<Navigate to="/login" />} />
