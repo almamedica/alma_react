@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage/LoginPage';
 import DashboardPage from './pages/DashboardPage/DashboardPage';
 import AgendaPage from './pages/AgendaPage/AgendaPage';
 import AccionesPage from './pages/AccionesPage/AccionesPage'; // <-- 1. IMPORTAR
+import AgendamientoConsultaPage from './pages/AgendamientoConsultaPage/AgendamientoConsultaPage';
 
 // Estilos globales completos (Sin cambios)
 const GlobalStyle = createGlobalStyle`
@@ -74,6 +75,18 @@ function App() {
             } 
           />
           {/* ------------------------------------- */}
+
+          {/* --- Añadir la ruta para la página de agendamiento --- */}
+          <Route 
+            path="/agendamiento/consulta/:id" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <AgendamientoConsultaPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
 
 
           {/* Ruta por defecto: redirige a /login */}

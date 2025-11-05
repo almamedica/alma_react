@@ -332,3 +332,56 @@ export const getOccupations = async () => {
   const response = await apiFetch(`/occupations`, { method: 'GET' });
   return await response.json();
 };
+
+export const getConsultationSpecialties = async () => {
+  const response = await apiFetch(`/specialties/consultations`, { method: 'GET' });
+  return await response.json();
+};
+
+/**
+ * Obtiene los datos del paciente por id.
+ */
+export const getPatientById = async (id) => {
+  const response = await apiFetch(`/patients/id/${id}`, { method: 'GET' });
+  return await response.json(); 
+};
+
+/**
+ * Obtiene la lista de prestaciones filtrada por el ID de la especialidad.
+ */
+export const getPrestationsBySpecialty = async (specialtyId) => {
+  const response = await apiFetch(`/specialties/${specialtyId}`, { method: 'GET' });
+  return await response.json();
+};
+
+/**
+ * Obtiene la lista de sucursales (facilities) filtrada por el ID de la prestación.
+ */
+export const getFacilitiesByPrestation = async (prestationId) => {
+  const response = await apiFetch(`/facilities/by-prestation/${prestationId}`, { method: 'GET' });
+  return await response.json();
+};
+
+
+/**
+ * Obtiene la disponibilidad de horas según prestación, edad y sucursal.
+ * Construye la URL con Query Params.
+ */
+export const getAvailability = async (categorieId, age, facilityId) => {
+  // 1. Validar que los parámetros obligatorios existan
+  if (!categorieId || !age || !facilityId) {
+    throw new Error('Faltan parámetros obligatorios (categorie, age, facility) para buscar disponibilidad.');
+  }
+
+  // 2. Construir los parámetros de consulta (Query Params)
+  const params = new URLSearchParams({
+    categorie: categorieId,
+    age: age,
+    facility: facilityId
+  });
+
+  // 3. Llamar a la API (apiFetch maneja el token y /api_nestjs)
+  // La URL final será: /api_nestjs/availability?categorie=...&age=...&facility=...
+  const response = await apiFetch(`/availability?${params.toString()}`, { method: 'GET' });
+  return await response.json();
+};
