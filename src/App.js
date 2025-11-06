@@ -12,6 +12,7 @@ import AgendaPage from './pages/AgendaPage/AgendaPage';
 import AccionesPage from './pages/AccionesPage/AccionesPage'; // <-- 1. IMPORTAR
 import AgendamientoConsultaPage from './pages/AgendamientoConsultaPage/AgendamientoConsultaPage';
 import AgendamientoConfirmacionPage from './pages/AgendamientoConfirmacionPage/AgendamientoConfirmacionPage';
+import AgendamientoExamenPage from './pages/AgendamientoExamenPage/AgendamientoExamenPage';
 
 // Estilos globales completos (Sin cambios)
 const GlobalStyle = createGlobalStyle`
@@ -77,13 +78,25 @@ function App() {
           />
           {/* ------------------------------------- */}
 
-          {/* --- Añadir la ruta para la página de agendamiento --- */}
+          {/* --- Añadir la ruta para la página de agendamiento consulta --- */}
           <Route 
             path="/agendamiento/consulta/:id" 
             element={
               <ProtectedRoute>
                 <MainLayout>
                   <AgendamientoConsultaPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* --- REGISTRAR LA NUEVA RUTA DE EXAMEN --- */}
+          <Route 
+            path="/agendamiento/examen/:id" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <AgendamientoExamenPage />
                 </MainLayout>
               </ProtectedRoute>
             } 
