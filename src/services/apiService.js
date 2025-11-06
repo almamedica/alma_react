@@ -371,6 +371,12 @@ export const getConsultationSpecialties = async () => {
   return await response.json();
 };
 
+export const getExamSpecialties = async () => {
+  // Llama al endpoint de exámenes que me indicaste
+  const response = await apiFetch(`/specialties/exams`, { method: 'GET' });
+  return await response.json();
+};
+
 /**
  * Obtiene los datos del paciente por id.
  */

@@ -8,7 +8,7 @@ import logoAlmaGrande from '../../assets/images/logo_alma_grande.png';
 
 // --- IMPORTACIÓN DE API ---
 import { 
-  getConsultationSpecialties,
+  getExamSpecialties,
   getPrestationsBySpecialty,
   getFacilitiesByPrestation,
   getPatientById,
@@ -28,20 +28,15 @@ const FormContainer = styled.div`
   border-radius: 0.75rem;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.06);
   overflow: hidden;
-  position: relative; /* Para el overlay */
+  position: relative;
 `;
 
 const FormHeader = styled.div`
   padding: 24px;
   color: white;
-  background: linear-gradient(195deg, #66BB6A 0%, #43A047 100%); /* Color Verde */
+  background: linear-gradient(195deg, #FFA726 0%, #FB8C00 100%); 
   border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-  
-  h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    color: white;
-  }
+  h2 { margin: 0; font-size: 1.5rem; color: white; }
 `;
 
 const FormBody = styled.div` padding: 24px; `;
@@ -64,11 +59,7 @@ const FormLabel = styled.label`
 
 const baseInputStyles = `
   width: 100%; padding: 10px 12px; font-size: 0.9rem; color: #495057; background-color: #fff; background-clip: padding-box; border: 1px solid #d2d6da; border-radius: 0.5rem; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-  &:focus {
-    outline: none;
-    border-color: #4CAF50; /* Color Verde */
-    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.25); /* Color Verde */
-  }
+  &:focus { outline: none; border-color: #FFA726; box-shadow: 0 0 0 3px rgba(255, 167, 38, 0.25); }
   &:disabled { background-color: #e9ecef; opacity: 1; }
 `;
 
@@ -96,7 +87,7 @@ const SubmitButton = styled.button`
   padding: 10px 20px;
   border-radius: 0.5rem;
   color: white;
-  background-color: #4CAF50; /* Color Verde */
+  background-color: #FB8C00; 
   border: none;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
@@ -129,16 +120,9 @@ const CalendarDayHeader = styled.div` text-align: center; font-weight: bold; bac
 const CalendarDay = styled.div`
   position: relative; min-height: 50px; background-color: white; padding: 8px; font-size: 0.9rem;
   color: ${props => props.isOtherMonth ? '#aaa' : '#333'};
-  ${props => props.isAvailable && css`
-    cursor: pointer; background-color: #e8f5e9; font-weight: bold;
-    &:hover { background-color: #c8e6c9; }
-    &::after { content: ''; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background-color: #4CAF50; }
-  `}
-  ${props => props.isSelected && css`
-    background-color: #4CAF50; color: white;
-    &::after { background-color: white; }
-  `}
-  ${props => props.isToday && css` border: 2px solid #4CAF50; padding: 6px; `}
+  ${props => props.isAvailable && css` cursor: pointer; background-color: #fff3e0; font-weight: bold; &:hover { background-color: #ffe0b2; } &::after { content: ''; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; border-radius: 50%; background-color: #FB8C00; } `}
+  ${props => props.isSelected && css` background-color: #FB8C00; color: white; &::after { background-color: white; } `}
+  ${props => props.isToday && css` border: 2px solid #FB8C00; padding: 6px; `}
 `;
 
 const TimeSlotsContainer = styled.div` margin-top: 24px; `;
@@ -158,13 +142,7 @@ const ModalInfo = styled.div` font-size: 1rem; color: #6c757d; line-height: 1.6;
 const ModalFooter = styled.div` margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px; `;
 const ModalButton = styled.button`
   font-weight: bold; font-size: 0.8rem; padding: 10px 20px; border-radius: 0.5rem; border: none; cursor: pointer; transition: all 0.2s ease-in-out; text-transform: uppercase;
-  ${props => props.primary ? css`
-    color: white; background-color: #4CAF50; /* Color Verde */
-    &:hover { background-color: #66BB6A; }
-  ` : css`
-    color: #344767; background-color: #e0e0e0;
-    &:hover { background-color: #c0c0c0; }
-  `}
+  ${props => props.primary ? css` color: white; background-color: #FB8C00; &:hover { background-color: #FFA726; } ` : css` color: #344767; background-color: #e0e0e0; &:hover { background-color: #c0c0c0; } `}
 `;
 
 // --- ✨ 2. NUEVOS ESTILOS: Overlay y Spinner con Logo ---
@@ -202,8 +180,8 @@ const SpinnerRing = styled.div`
   position: absolute;
   width: 100%;
   height: 100%;
-  border: 7px solid rgba(76, 175, 80, 0.2); /* Verde claro transparente */
-  border-top: 7px solid #4CAF50; /* Verde fuerte */
+  border: 7px solid rgba(251, 140, 0, 0.2); /* Naranja claro transparente */
+  border-top: 7px solid #FB8C00; /* Naranja fuerte */
   border-radius: 50%;
   animation: ${spin} 1s linear infinite;
 `;
@@ -215,10 +193,11 @@ const SpinnerLogo = styled.img`
 `;
 // --- FIN NUEVOS ESTILOS ---
 
-// --- Estilos de react-select (tema Verde) ---
+
+// --- Estilos de react-select ---
 const searchableSelectStyles = {
-  control: (provided, state) => ({ ...provided, width: '100%', minHeight: '43px', fontSize: '0.9rem', color: '#495057', backgroundColor: state.isDisabled ? '#e9ecef' : '#fff', border: state.isFocused ? '1px solid #4CAF50' : '1px solid #d2d6da', borderRadius: '0.5rem', boxShadow: state.isFocused ? '0 0 0 3px rgba(76, 175, 80, 0.25)' : 'none', transition: 'border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out', '&:hover': { borderColor: state.isFocused ? '#4CAF50' : '#d2d6da', }, opacity: state.isDisabled ? '0.7' : '1', }),
-  option: (provided, state) => ({ ...provided, fontSize: '0.9rem', backgroundColor: state.isSelected ? '#4CAF50' : state.isFocused ? '#e8f5e9' : 'white', color: state.isSelected ? 'white' : '#344767', '&:active': { backgroundColor: '#4CAF50', color: 'white', }, }),
+  control: (provided, state) => ({ ...provided, width: '100%', minHeight: '43px', fontSize: '0.9rem', color: '#495057', backgroundColor: state.isDisabled ? '#e9ecef' : '#fff', border: state.isFocused ? '1px solid #FFA726' : '1px solid #d2d6da', borderRadius: '0.5rem', boxShadow: state.isFocused ? '0 0 0 3px rgba(255, 167, 38, 0.25)' : 'none', transition: 'border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out', '&:hover': { borderColor: state.isFocused ? '#FFA726' : '#d2d6da', }, opacity: state.isDisabled ? '0.7' : '1', }),
+  option: (provided, state) => ({ ...provided, fontSize: '0.9rem', backgroundColor: state.isSelected ? '#FB8C00' : state.isFocused ? '#fff3e0' : 'white', color: state.isSelected ? 'white' : '#344767', '&:active': { backgroundColor: '#FB8C00', color: 'white', }, }),
   menu: (provided) => ({ ...provided, borderRadius: '0.5rem', zIndex: 5, }),
   placeholder: (provided) => ({ ...provided, color: '#6c757d', }),
   singleValue: (provided) => ({ ...provided, color: '#495057', }),
@@ -227,7 +206,7 @@ const searchableSelectStyles = {
 
 
 // --- COMPONENTE DE PÁGINA ---
-const AgendamientoConsultaPage = () => {
+const AgendamientoExamenPage = () => {
   const { id: patientId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -272,8 +251,8 @@ const AgendamientoConsultaPage = () => {
   }, [prestations]);
 
   // --- Funciones de Carga (useCallback) ---
-  const loadSpecialties = useCallback(async () => { setLoadingSpecialties(true); setError(''); try { const response = await getConsultationSpecialties(); setSpecialties(response.data || []); } catch (err) { setError("No se pudieron cargar las especialidades."); } finally { setLoadingSpecialties(false); } }, []);
-  const loadPrestations = useCallback(async () => { setPrestations([]); if (!specialtyId) return; setLoadingPrestations(true); setError(''); try { const response = await getPrestationsBySpecialty(specialtyId); setPrestations(response.data || []); } catch (err) { setError("No se pudieron cargar las prestaciones."); } finally { setLoadingPrestations(false); } }, [specialtyId]);
+  const loadSpecialties = useCallback(async () => { setLoadingSpecialties(true); setError(''); try { const response = await getExamSpecialties(); setSpecialties(response.data || []); } catch (err) { setError("No se pudieron cargar las especialidades de exámenes."); } finally { setLoadingSpecialties(false); } }, []);
+  const loadPrestations = useCallback(async () => { setPrestations([]); if (!specialtyId) return; setLoadingPrestations(true); setError(''); try { const response = await getPrestationsBySpecialty(specialtyId); setPrestations(response.data || []); } catch (err) { setError("No se pudieron cargar las prestaciones de exámenes."); } finally { setLoadingPrestations(false); } }, [specialtyId]);
   const loadFacilities = useCallback(async () => { setFacilities([]); if (!prestationId) return; setLoadingFacilities(true); setError(''); try { const response = await getFacilitiesByPrestation(prestationId); setFacilities(response.data || []); } catch (err) { setError("No se pudieron cargar las sucursales."); } finally { setLoadingFacilities(false); } }, [prestationId]);
   const loadPatientOnRefresh = useCallback(async () => { if (patientFromState) { setPatientData(patientFromState); return; } setLoadingPatient(true); try { const response = await getPatientById(patientId); let data = response.data?.[0]; if (data) { setPatientData(data); setFormData(prev => ({ ...prev, age: data.edad })); } } catch (err) { console.error("Error al cargar paciente (F5):", err); } finally { setLoadingPatient(false); } }, [patientId, patientFromState]);
 
@@ -298,9 +277,11 @@ const AgendamientoConsultaPage = () => {
     setSelectedDate(firstDateString); 
   }, [availabilitySlots]);
 
-  // --- ✨ 3. useEffect para el Auto-Scroll (Versión original) ---
+  // --- ✨ 4. useEffect para el Auto-Scroll (Versión original) ---
   useEffect(() => {
+    // Si la carga terminó, hay resultados, y el ref existe...
     if (!loadingAvailability && availabilitySlots.length > 0 && resultsRef.current) {
+      // ... haz scroll suavemente hacia el contenedor de resultados.
       resultsRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'start' 
@@ -354,12 +335,11 @@ const AgendamientoConsultaPage = () => {
     setAvailabilitySlots([]);
     setSelectedDate(null);
     try {
-      const { prestationId, age, branchId } = formData; // Destructuración movida aquí
       const response = await getAvailability(prestationId, age, branchId);
       if (response.data && response.data.length > 0) {
         setAvailabilitySlots(response.data);
       } else {
-        setError("No se encontraron horas disponibles para esta búsqueda.");
+        setError("No se encontraron horas disponibles para este examen.");
       }
     } catch (err) {
       console.error("Error al buscar disponibilidad:", err);
@@ -437,14 +417,14 @@ const AgendamientoConsultaPage = () => {
   return (
     <div>
       <Breadcrumb>
-        Páginas / <Link to={`/acciones/${patientId}`}>Acciones</Link> / <strong>Consulta Médica</strong>
+        Páginas / <Link to={`/acciones/${patientId}`}>Acciones</Link> / <strong>Exámenes Médicos</strong>
       </Breadcrumb>
 
       {/* --- Modal --- */}
       {isModalOpen && selectedSlot && (
         <ModalOverlay>
           <ModalContent>
-            <ModalHeader>Confirmar Reserva</ModalHeader>
+            <ModalHeader>Confirmar Reserva de Examen</ModalHeader>
             <ModalInfo>
               <p><strong>Paciente:</strong> {displayName}</p>
               <p><strong>Profesional:</strong> {selectedSlot.professional_name}</p>
@@ -463,7 +443,7 @@ const AgendamientoConsultaPage = () => {
       {/* --- Contenedor del Formulario --- */}
       <FormContainer>
         
-        {/* --- ✨ 4. Overlay de Carga con Logo --- */}
+        {/* --- ✨ 5. Overlay de Carga con Logo --- */}
         {loadingAvailability && (
           <LoadingOverlay>
             <CustomSpinner>
@@ -474,18 +454,18 @@ const AgendamientoConsultaPage = () => {
         )}
 
         <FormHeader>
-          <h2>Consultas Médicas: {displayName}</h2>
+          <h2>Exámenes Médicos: {displayName}</h2>
         </FormHeader>
 
         <FormBody>
-          <p>Ingrese la información requerida para buscar disponibilidad.</p>
+          <p>Ingrese la información requerida para buscar disponibilidad de exámenes.</p>
           
           <form onSubmit={handleSearchAvailability}>
             
             <FormGrid>
               {/* --- Campo Especialidad --- */}
               <FormField>
-                <FormLabel htmlFor="specialtyId">Especialidad</FormLabel>
+                <FormLabel htmlFor="specialtyId">Especialidad de Examen</FormLabel>
                 <FormSelect
                   id="specialtyId"
                   name="specialtyId"
@@ -505,7 +485,7 @@ const AgendamientoConsultaPage = () => {
 
               {/* --- Campo Prestación (con react-select) --- */}
               <FormField>
-                <FormLabel htmlFor="prestationId">Prestación</FormLabel>
+                <FormLabel htmlFor="prestationId">Examen / Prestación</FormLabel>
                 <Select
                   id="prestationId"
                   name="prestationId"
@@ -563,7 +543,7 @@ const AgendamientoConsultaPage = () => {
 
           </form>
 
-          {/* --- ✨ 5. Sección de Resultados (con el ref) --- */}
+          {/* --- ✨ 6. Sección de Resultados (con el ref) --- */}
           {availabilitySlots.length > 0 && (
             <AvailabilityContainer ref={resultsRef}>
               
@@ -605,4 +585,4 @@ const AgendamientoConsultaPage = () => {
   );
 };
 
-export default AgendamientoConsultaPage;
+export default AgendamientoExamenPage;
