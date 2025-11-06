@@ -223,7 +223,7 @@ const PatientDataForm = ({ initialData, onSave }) => {
         comuna: patient.state || '', 
         
         direccion: patient.direccion || '',
-        prevision: patient.prevision || '',
+        prevision: (patient.prevision ?? '0').toString(),
         
         // Asigna el ID de la ocupación (ej: "2" o "5")
         occupation: occupationId, 
@@ -246,7 +246,10 @@ const PatientDataForm = ({ initialData, onSave }) => {
         ]);
 
         const mappedRegions = mapSelectOptions(regionsData?.data, 'id_region', 'region');
-        const mappedFinancers = mapSelectOptions(financersData?.data, 'codigo', 'nombre');
+        const mappedFinancers = financersData?.data.map(f => ({
+           id: f.codigo.toString(),   // 🔧 Asegura que todos los IDs sean string
+           name: f.nombre
+        }));
         const mappedOccupations = mapSelectOptions(occupationsData?.data, 'id', 'nombre');
 
         setRegions(mappedRegions);
@@ -350,13 +353,15 @@ const PatientDataForm = ({ initialData, onSave }) => {
       city: formData.region, // 'city' es la Región (ej: 13 )
       
       direccion: formData.direccion,
-      prevision: formData.prevision,
+      prevision: Number(formData.prevision),
       
       // Enviar el ID de la ocupación (ej: 5)
       occupation: formData.occupation, 
       
       conf_verifalia: formData.conf_verifalia,
     };
+
+    console.log("📦 Datos enviados al backend:", patientDataApi);
     
     if (patient.id) {
         onSave(patient.id, patientDataApi); 
@@ -542,7 +547,7 @@ const PatientDataForm = ({ initialData, onSave }) => {
           <div /> 
         </FormRow>
 
-        <Button type="submit" disabled={isVerifying}>Actualizar Datos</Button>
+        <Button type="submit" disabled={isVerifying}>Confirmar Datos</Button>
       </Form>
     </div>
   );

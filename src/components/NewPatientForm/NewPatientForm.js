@@ -6,12 +6,23 @@ import {
   verifyEmail, 
   getRegions, 
   getCommunesByRegion, 
-  getFinancers // <--- CAMBIO
+  getFinancers,
+  getOccupations
+  // getCountries ya no se necesita
 } from '../../services/apiService';
 
 const MySwal = withReactContent(Swal);
 
-// --- Estilos (Idénticos a PatientDataForm) ---
+// --- FUNCIÓN HELPER ---
+const mapSelectOptions = (data, idKey, nameKey) => {
+  if (!Array.isArray(data)) return [];
+  return data.map(item => ({
+    id: item[idKey],
+    name: item[nameKey]
+  }));
+};
+
+// --- Estilos (Tus estilos) ---
 const Form = styled.form`
   display: flex;
   flex-direction: column;
@@ -37,7 +48,8 @@ const Input = styled.input`
   border: 1px solid #d2d6da;
   border-radius: 0.375rem;
   font-size: 1rem;
-  
+  line-height: 1.5;
+
   &:read-only {
     background-color: #f8f9fa;
   }
@@ -47,6 +59,8 @@ const Select = styled.select`
   border: 1px solid #d2d6da;
   border-radius: 0.375rem;
   font-size: 1rem;
+  height: calc(1.5em + 1rem + 2px);
+  box-sizing: border-box;
 `;
 const Button = styled.button`
   background-image: linear-gradient(195deg, #42424a 0%, #191919 100%);
@@ -58,42 +72,48 @@ const Button = styled.button`
   cursor: pointer;
   margin-top: 16px;
   align-self: flex-end;
-  
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
 `;
-const EmailGroup = styled(FormGroup)`
-  position: relative;
+const EmailGroup = styled(FormGroup)``;
+const EmailInputWrapper = styled.div`
+  display: flex;
+  align-items: center; 
+  gap: 8px; 
+`;
+const EmailInput = styled(Input)`
+  flex-grow: 1; 
 `;
 const VerifyBadge = styled.span`
   background-color: #4CAF50;
   color: white;
-  padding: 4px 8px;
+  padding: 8px 10px; 
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: bold;
-  position: absolute;
-  top: 30px;
-  right: 10px;
   display: flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap; 
+  height: calc(1.5em + 1rem + 2px); 
+  box-sizing: border-box; 
 `;
 const VerifyButton = styled.button`
   background: #1A73E8;
   color: white;
   border: none;
-  padding: 4px 8px;
+  padding: 8px 10px; 
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: bold;
-  position: absolute;
-  top: 30px;
-  right: 10px;
   cursor: pointer;
-  
+  white-space: nowrap;
+  height: calc(1.5em + 1rem + 2px); 
+  box-sizing: border-box; 
+
   &:disabled {
     background: #6c757d;
   }
@@ -106,22 +126,26 @@ const CheckIcon = () => (
 // --- Fin Estilos ---
 
 
-const NewPatientForm = ({ initialRut, onSave }) => {
-  //console.log('Rendering NewPatientForm con RUT:', initialRut);
+// --- COMPONENTE ---
+const NewPatientForm = ({ initialRut, initialPasaporte, initialNacionalidad, onSave }) => {
+  
   const [formData, setFormData] = useState({
     rut: initialRut || '',
+    pasaporte: initialPasaporte || null,
+    nacionalidad: initialNacionalidad || '', // <-- Recibe la prop
     nombre: '',
     paterno: '',
     materno: '',
     email: '',
     celular: '',
-    telefono_casa: '',
+    telefono_casa: '', // <-- 2do teléfono
     sexo: '',
     fecha_de_nacimiento: '',
     region: '',
     comuna: '',
     direccion: '',
     prevision: '',
+    ocupacion: '',
     conf_verifalia: 0,
   });
   
@@ -131,20 +155,23 @@ const NewPatientForm = ({ initialRut, onSave }) => {
   // Estados para los <select>
   const [regions, setRegions] = useState([]);
   const [communes, setCommunes] = useState([]);
-  const [financers, setFinancers] = useState([]); // <--- CAMBIO
+  const [financers, setFinancers] = useState([]);
+  const [occupations, setOccupations] = useState([]);
 
-  // Carga de datos para los <select>
+  // Carga de datos (sin 'getCountries')
   useEffect(() => {
     const loadSelectData = async () => {
       try {
         setIsLoadingSelects(true);
-        const [regionsData, financersData] = await Promise.all([
+        const [regionsData, financersData, occupationsData] = await Promise.all([
           getRegions(),
-          getFinancers() // <--- CAMBIO
+          getFinancers(),
+          getOccupations()
         ]);
         
-        setRegions(regionsData.data || []);
-        setFinancers(financersData.data || []); // <--- CAMBIO
+        setRegions(mapSelectOptions(regionsData?.data, 'id_region', 'region'));
+        setFinancers(mapSelectOptions(financersData?.data, 'codigo', 'nombre'));
+        setOccupations(mapSelectOptions(occupationsData?.data, 'id', 'nombre'));
         
       } catch (error) {
         console.error("Error cargando datos para selectores:", error);
@@ -156,15 +183,16 @@ const NewPatientForm = ({ initialRut, onSave }) => {
     loadSelectData();
   }, []);
 
-  // Carga de comunas
+  // Carga de comunas (sin cambios)
   useEffect(() => {
     if (formData.region) {
       const loadCommunes = async () => {
         try {
           const communesData = await getCommunesByRegion(formData.region);
-          setCommunes(communesData.data || []);
+          setCommunes(mapSelectOptions(communesData?.data, 'id', 'nombre'));
         } catch (error) {
           console.error("Error cargando comunas:", error);
+          setCommunes([]);
         }
       };
       loadCommunes();
@@ -173,6 +201,7 @@ const NewPatientForm = ({ initialRut, onSave }) => {
     }
   }, [formData.region]);
 
+  // handleChange (sin cambios)
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -181,12 +210,13 @@ const NewPatientForm = ({ initialRut, onSave }) => {
     }));
   };
 
+  // handleVerifyEmail (sin cambios)
   const handleVerifyEmail = async (e) => {
     e.preventDefault();
     if (!formData.email) return;
     setIsVerifying(true);
     try {
-      await verifyEmail(formData.email);
+      await verifyEmail(formData.email, formData.rut); 
       setFormData(prev => ({ ...prev, conf_verifalia: 1 }));
       MySwal.fire('¡Verificado!', 'El email es válido.', 'success');
     } catch (error) {
@@ -196,40 +226,52 @@ const NewPatientForm = ({ initialRut, onSave }) => {
     }
   };
 
+  // handleSubmit (envía 'telefono_casa')
   const handleSubmit = (event) => {
     event.preventDefault();
-    // Mapeamos los nombres del formulario a los que espera tu API
+
     const patientDataApi = {
-      'Rut/DNI': formData.rut,
+      rut: formData.rut,
+      pasaporte: formData.pasaporte,
       nombre: formData.nombre,
       paterno: formData.paterno,
       materno: formData.materno,
-      email: formData.email,
+      correo: formData.email,
       celular: formData.celular,
-      telefono_casa: formData.telefono_casa,
+      telefono_casa: formData.telefono_casa || null, // <-- Envía el 2do teléfono
+      fecha_nacimiento: formData.fecha_de_nacimiento,
       sexo: formData.sexo,
-      fecha_de_nacimiento: formData.fecha_de_nacimiento,
-      state: formData.region, // <--- CORREGIDO
-      city: formData.comuna, // <--- CORREGIDO
+      prevision: Number(formData.prevision),
+      nacionalidad: Number(formData.nacionalidad), // <-- Envía el valor de la prop
       direccion: formData.direccion,
-      prevision: formData.prevision,
-      conf_verifalia: formData.conf_verifalia,
+      comuna: Number(formData.comuna),
+      region: Number(formData.region),
+      ocupacion: Number(formData.ocupacion),
     };
-    onSave(patientDataApi); // Llama a 'handleSaveNewPatient'
+    
+    onSave(patientDataApi);
   };
 
+  // --- JSX (SIN dropdown de Nacionalidad) ---
   return (
     <div>
       <h4>Ingresar Datos del Paciente</h4>
-      <p>El RUT <strong>{initialRut}</strong> no está registrado. Por favor, complete los siguientes datos.</p>
+      <p>El RUT/DNI <strong>{initialRut}</strong> no está registrado. Por favor, complete los siguientes datos.</p>
       <br/>
       <Form onSubmit={handleSubmit}>
+        
         <FormRow>
           <FormGroup>
-            <Label htmlFor="rut">RUT / DNI</Label>
-            <Input id="rut" name="rut" type="text" value={formData.rut} readOnly />
+            <Label htmlFor="rut">RUT / DNI (Identificador)</Label>
+            <Input 
+              id="rut" 
+              name="rut" 
+              type="text" 
+              value={formData.rut} 
+              readOnly 
+            />
           </FormGroup>
-          {/* CAMPO PAÍS ELIMINADO */}
+          <div /> 
         </FormRow>
         
         <FormRow>
@@ -250,20 +292,20 @@ const NewPatientForm = ({ initialRut, onSave }) => {
           </FormGroup>
           <EmailGroup>
             <Label htmlFor="email">Email</Label>
-            <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required />
-            
-            {formData.conf_verifalia === 1 ? (
-              <VerifyBadge>
-                <CheckIcon /> VERIFICADO
-              </VerifyBadge>
-            ) : (
-              <VerifyButton type="button" onClick={handleVerifyEmail} disabled={isVerifying}>
-                {isVerifying ? 'Verificando...' : 'Verificar'}
-              </VerifyButton>
-            )}
+            <EmailInputWrapper>
+              <EmailInput id="email" name="email" type="email" value={formData.email} onChange={handleChange} required />
+              {formData.conf_verifalia === 1 ? (
+                <VerifyBadge><CheckIcon /> VERIFICADO</VerifyBadge>
+              ) : (
+                <VerifyButton type="button" onClick={handleVerifyEmail} disabled={isVerifying}>
+                  {isVerifying ? 'Verificando...' : 'Verificar'}
+                </VerifyButton>
+              )}
+            </EmailInputWrapper>
           </EmailGroup>
         </FormRow>
 
+        {/* Fila de Teléfonos (con 2do teléfono) */}
         <FormRow>
           <FormGroup>
             <Label htmlFor="celular">Teléfono</Label>
@@ -271,26 +313,33 @@ const NewPatientForm = ({ initialRut, onSave }) => {
           </FormGroup>
           <FormGroup>
             <Label htmlFor="telefono_casa">2° Teléfono</Label>
-            <Input id="telefono_casa" name="telefono_casa" type="text" value={formData.telefono_casa} onChange={handleChange} />
+            <Input 
+              id="telefono_casa" 
+              name="telefono_casa" 
+              type="text" 
+              value={formData.telefono_casa} 
+              onChange={handleChange} 
+            />
           </FormGroup>
         </FormRow>
 
+        {/* Fila de Sexo y Fecha (SIN Nacionalidad) */}
         <FormRow>
           <FormGroup>
             <Label htmlFor="sexo">Sexo</Label>
-            <Select id="sexo" name="sexo" value={formData.sexo} onChange={handleChange}>
+            <Select id="sexo" name="sexo" value={formData.sexo} onChange={handleChange} required>
               <option value="">Seleccione...</option>
               <option value="M">Masculino</option>
               <option value="F">Femenino</option>
-              <option value="I">Indefinido</option>
             </Select>
           </FormGroup>
           <FormGroup>
             <Label htmlFor="fecha_de_nacimiento">Fecha Nacimiento</Label>
-            <Input id="fecha_de_nacimiento" name="fecha_de_nacimiento" type="date" value={formData.fecha_de_nacimiento} onChange={handleChange} />
+            <Input id="fecha_de_nacimiento" name="fecha_de_nacimiento" type="date" value={formData.fecha_de_nacimiento} onChange={handleChange} required/>
           </FormGroup>
         </FormRow>
 
+        {/* Filas de Dirección (sin cambios) */}
         <FormRow>
           <FormGroup>
             <Label htmlFor="region">Región</Label>
@@ -300,11 +349,12 @@ const NewPatientForm = ({ initialRut, onSave }) => {
               value={formData.region} 
               onChange={handleChange}
               disabled={isLoadingSelects}
+              required
             >
               <option value="">{isLoadingSelects ? 'Cargando...' : 'Seleccione región'}</option>
               {regions.map(region => (
-                <option key={region.id_region} value={region.id_region}>
-                  {region.region}
+                <option key={region.id} value={region.id}>
+                  {region.name}
                 </option>
               ))}
             </Select>
@@ -316,9 +366,15 @@ const NewPatientForm = ({ initialRut, onSave }) => {
               name="comuna" 
               value={formData.comuna} 
               onChange={handleChange}
-              disabled={!formData.region}
+              disabled={!formData.region || communes.length === 0}
+              required
             >
-              <option value="">{formData.region ? 'Seleccione comuna' : 'Seleccione una región primero'}</option>
+              <option value="">
+                {!formData.region 
+                  ? 'Seleccione una región primero' 
+                  : (communes.length > 0 ? 'Seleccione comuna' : 'Cargando...')
+                }
+              </option>
               {communes.map(commune => (
                 <option key={commune.id} value={commune.id}>
                   {commune.name}
@@ -331,25 +387,48 @@ const NewPatientForm = ({ initialRut, onSave }) => {
         <FormRow>
           <FormGroup>
             <Label htmlFor="direccion">Dirección</Label>
-            <Input id="direccion" name="direccion" type="text" value={formData.direccion} onChange={handleChange} />
+            <Input id="direccion" name="direccion" type="text" value={formData.direccion} onChange={handleChange} required/>
           </FormGroup>
           <FormGroup>
-            <Label htmlFor="prevision">Financiador</Label> {/* <--- CAMBIO DE LABEL */}
+            <Label htmlFor="prevision">Financiador</Label>
             <Select 
               id="prevision" 
               name="prevision" 
               value={formData.prevision} 
               onChange={handleChange}
               disabled={isLoadingSelects}
+              required
             >
               <option value="">{isLoadingSelects ? 'Cargando...' : 'Seleccione financiador'}</option>
-              {financers.map(fin => ( // <--- CAMBIO
-                <option key={fin.codigo} value={fin.codigo}>
-                  {fin.nombre}
+              {financers.map(fin => (
+                <option key={fin.id} value={fin.id}>
+                  {fin.name}
                 </option>
               ))}
             </Select>
           </FormGroup>
+        </FormRow>
+
+        <FormRow>
+          <FormGroup>
+            <Label htmlFor="ocupacion">Ocupación</Label>
+            <Select 
+              id="ocupacion" 
+              name="ocupacion" 
+              value={formData.ocupacion} 
+              onChange={handleChange}
+              disabled={isLoadingSelects}
+              required
+            >
+              <option value="">{isLoadingSelects ? 'Cargando...' : 'Seleccione ocupación'}</option>
+              {occupations.map(occ => (
+                <option key={occ.id} value={occ.id}>
+                  {occ.name}
+                </option>
+              ))}
+            </Select>
+          </FormGroup>
+          <div />
         </FormRow>
         
         <Button type="submit" disabled={isVerifying}>Guardar Paciente</Button>

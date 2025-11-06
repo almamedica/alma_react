@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 
 import { 
@@ -7,7 +7,7 @@ import {
   getPrestationsBySpecialty,
   getFacilitiesByPrestation,
   getPatientById,
-  getAvailability
+  getAvailability 
 } from '../../services/apiService'; 
 
 // --- ESTILOS (sin cambios) ---
@@ -89,7 +89,6 @@ const ButtonContainer = styled.div`
   margin-top: 24px;
 `;
 const SubmitButton = styled.button`
-  text-decoration: none;
   font-weight: bold;
   font-size: 0.8rem;
   padding: 10px 20px;
@@ -338,6 +337,7 @@ const ModalButton = styled.button`
 const AgendamientoConsultaPage = () => {
   const { id: patientId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const patientFromState = location.state?.patient;
 
   const [formData, setFormData] = useState({
@@ -370,12 +370,10 @@ const AgendamientoConsultaPage = () => {
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [error, setError] = useState('');
 
-  // --- 1. DESTRUCTURAR VALORES DE 'formData' ---
-  // Hacemos esto para que los 'useCallback' solo dependan
-  // de los valores primitivos (string, number) y no del objeto 'formData' entero.
-  const { specialtyId, prestationId } = formData;
+  // --- DESTRUCTURAR VALORES DE 'formData' ---
+  const { specialtyId, prestationId, } = formData; 
   
-  // --- 2. ENVOLVER FUNCIONES CON useCallback ---
+  // --- FUNCIONES CON useCallback ---
   
   const loadSpecialties = useCallback(async () => {
     setLoadingSpecialties(true); setError('');
@@ -384,31 +382,29 @@ const AgendamientoConsultaPage = () => {
       setSpecialties(response.data || []);
     } catch (err) { setError("No se pudieron cargar las especialidades."); }
     finally { setLoadingSpecialties(false); }
-  }, []); // Dependencias: [] (ninguna)
+  }, []);
   
   const loadPrestations = useCallback(async () => {
     setPrestations([]);
-    if (!specialtyId) return; // Si no hay ID, no hagas nada
-    
+    if (!specialtyId) return;
     setLoadingPrestations(true); setError('');
     try {
       const response = await getPrestationsBySpecialty(specialtyId);
       setPrestations(response.data || []);
     } catch (err) { setError("No se pudieron cargar las prestaciones."); }
     finally { setLoadingPrestations(false); }
-  }, [specialtyId]); // --- 3. USAR EL VALOR DESTRUCTURADO ---
+  }, [specialtyId]);
   
   const loadFacilities = useCallback(async () => {
     setFacilities([]);
-    if (!prestationId) return; // Si no hay ID, no hagas nada
-    
+    if (!prestationId) return;
     setLoadingFacilities(true); setError('');
     try {
       const response = await getFacilitiesByPrestation(prestationId);
       setFacilities(response.data || []);
     } catch (err) { setError("No se pudieron cargar las sucursales."); }
     finally { setLoadingFacilities(false); }
-  }, [prestationId]); // --- 3. USAR EL VALOR DESTRUCTURADO ---
+  }, [prestationId]);
   
   const loadPatientOnRefresh = useCallback(async () => {
     if (patientFromState) {
@@ -427,24 +423,26 @@ const AgendamientoConsultaPage = () => {
     finally { setLoadingPatient(false); }
   }, [patientId, patientFromState]);
 
-  // --- 4. ACTUALIZAR useEffects ---
-  // (Sin cambios, pero ahora están 100% correctos)
+  // --- useEffects (limpios) ---
   useEffect(() => { loadSpecialties() }, [loadSpecialties]);
   useEffect(() => { loadPrestations() }, [loadPrestations]);
   useEffect(() => { loadFacilities() }, [loadFacilities]);
   useEffect(() => { loadPatientOnRefresh() }, [loadPatientOnRefresh]);
   
 
-  // --- EFECTO 5: Procesar disponibilidad (sin cambios) ---
+  // --- EFECTO 5: Procesar disponibilidad Y SELECCIONAR PRIMER DÍA ---
   useEffect(() => {
     if (availabilitySlots.length === 0) {
       setAvailableDates(new Set());
+      setSelectedDate(null);
       return;
     }
-    const firstDate = new Date(`${availabilitySlots[0].date}T00:00:00`);
+    const firstDateString = availabilitySlots[0].date;
+    const firstDate = new Date(`${firstDateString}T00:00:00`);
     setCurrentMonth(new Date(firstDate.getFullYear(), firstDate.getMonth(), 1));
     const datesWithSlots = new Set(availabilitySlots.map(slot => slot.date));
     setAvailableDates(datesWithSlots);
+    setSelectedDate(firstDateString); 
   }, [availabilitySlots]);
 
 
@@ -501,8 +499,28 @@ const AgendamientoConsultaPage = () => {
       setLoadingAvailability(false);
     }
   };
+  
+  // --- FUNCIÓN DE NAVEGACIÓN A CONFIRMACIÓN ---
+  const handleConfirmNavigation = () => {
+  handleCloseModal();
 
-  // --- MANEJADORES DEL MODAL (sin cambios) ---
+  const prestationName =
+    prestations.find(p => p.pc_catid === parseInt(formData.prestationId))?.pc_catname || 'N/A';
+  const branchName =
+    facilities.find(f => f.id === parseInt(formData.branchId))?.name || 'N/A';
+
+  navigate(`/agendamiento/confirmacion/${patientId}`, { 
+    state: { 
+      slot: selectedSlot, 
+      patient: patientData,
+      prestationName,
+      branchName,
+    } 
+  });
+};
+
+
+  // --- MANEJADORES DEL MODAL ---
   const handleTimeSlotClick = (slot) => {
     setSelectedSlot(slot);
     setIsModalOpen(true);
@@ -513,11 +531,6 @@ const AgendamientoConsultaPage = () => {
     setSelectedSlot(null);
   };
   
-  const handleConfirmBooking = () => {
-    console.log("Reservando hora:", selectedSlot);
-    handleCloseModal();
-  };
-
 
   // --- LÓGICA DEL CALENDARIO (sin cambios) ---
   const LOCALE = 'es-CL';
@@ -614,7 +627,7 @@ const AgendamientoConsultaPage = () => {
             </ModalInfo>
             <ModalFooter>
               <ModalButton onClick={handleCloseModal}>Cerrar</ModalButton>
-              <ModalButton primary onClick={handleConfirmBooking}>Reservar Hora</ModalButton>
+              <ModalButton primary onClick={handleConfirmNavigation}>Continuar a Reserva</ModalButton>
             </ModalFooter>
           </ModalContent>
         </ModalOverlay>
@@ -720,7 +733,11 @@ const AgendamientoConsultaPage = () => {
               
               {selectedDate && (
                 <TimeSlotsContainer>
-                  <h3>Horas disponibles para {getFormattedDate(selectedDate)}</h3>
+                  {/* Se muestra el contador de horas disponibles */}
+                  <h3>
+                    {slotsForSelectedDay.length} {slotsForSelectedDay.length === 1 ? 'Hora disponible' : 'Horas disponibles'} para {getFormattedDate(selectedDate)}
+                  </h3>
+
                   {slotsForSelectedDay.length > 0 ? (
                     <TimeSlotGrid>
                       {slotsForSelectedDay.map((slot, index) => (
@@ -731,7 +748,7 @@ const AgendamientoConsultaPage = () => {
                       ))}
                     </TimeSlotGrid>
                   ) : (
-                    <p>No hay más horas para este día (esto no debería pasar, revisa el filtro).</p>
+                    <p>No hay más horas para este día.</p>
                   )}
                 </TimeSlotsContainer>
               )}
