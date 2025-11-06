@@ -280,7 +280,7 @@ const AgendamientoConfirmacionPage = () => {
 
       <DataGrid>
         <DataField>
-          <DataLabel>Rut Paciente</DataLabel>
+          <DataLabel>Rut/DNI Paciente</DataLabel>
           <DataValue>{rutPatient}</DataValue>
         </DataField>
 

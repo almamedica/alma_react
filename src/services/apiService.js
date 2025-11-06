@@ -215,13 +215,13 @@ export const updatePatient = async (rut, patientData) => {
     fecha_nacimiento: patientData.fecha_de_nacimiento ?? patientData.fecha_nacimiento ?? "", // ✅ toma cualquiera de los dos nombres
     sexo: patientData.sexo,
     prevision: Number(patientData.prevision ?? 1),
-    nacionalidad: Number(patientData.country_code ?? 1),
+    nacionalidad: Number(patientData.country_code ?? 152),
     region: Number(patientData.state ?? 13),
     comuna: Number(patientData.city ?? 101),
     ocupacion: Number(patientData.occupation ?? 1),
   };
 
-  console.log("🟢 Payload enviado al backend (updatePatient):", payload);
+  //console.log("🟢 Payload enviado al backend (updatePatient):", payload);
 
   const response = await apiFetch(`/patients/${rut}`, {
     method: 'PUT',
