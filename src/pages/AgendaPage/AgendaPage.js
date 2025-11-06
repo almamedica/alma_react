@@ -9,16 +9,16 @@ import {
   searchPatientByRut,
   createNewPatient,
   updatePatient
+  // getPatientById ya no se usa, quitado para limpiar el warning
 } from '../../services/apiService';
 
 import PatientSearchForm from '../../components/PatientSearchForm/PatientSearchForm';
 import NewPatientForm from '../../components/NewPatientForm/NewPatientForm';
 import PatientDataForm from '../../components/PatientDataForm/PatientDataForm';
 
-// Mantenemos MySwal porque handleSaveNewPatient SÍ lo usa
 const MySwal = withReactContent(Swal); 
 
-// --- Estilos (Sin cambios) ---
+// --- Estilos (Tus estilos) ---
 const Card = styled.div`
   background: white;
   border-radius: 0.75rem;
@@ -63,7 +63,6 @@ const LoadingMessage = styled.p`
 // --- Fin de Estilos ---
 
 
-// --- Función Helper (Sin cambios) ---
 const parseNumber = (value) => {
   const num = Number(value);
   if (isNaN(num) || num === 0) {
@@ -80,7 +79,6 @@ const AgendaPage = () => {
   const [resetKey, setResetKey] = useState(0); 
 
   const location = useLocation();
-  // --- 2. INICIALIZAR useNavigate ---
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -91,9 +89,9 @@ const AgendaPage = () => {
   }, [location]);
 
   
-  // (handlePatientSearch sin cambios)
-  const handlePatientSearch = async (rut, isForeigner, country) => // country es { value: isonum, label: nombre }
-  {
+  // --- handlePatientSearch (Actualizado) ---
+  // Acepta (rut, isForeigner, originalPasaporte)
+  const handlePatientSearch = async (rut, isForeigner, originalPasaporte) => {
     setLoading(true);
     setError('');
     setNotFoundRut('');
@@ -107,26 +105,25 @@ const AgendaPage = () => {
           exists: true, 
           data: result.data, 
           isForeigner: isForeigner, 
-          country: country        
+          pasaporte: originalPasaporte // Guardamos el pasaporte original
         });
       } else {
-        console.warn("API devolvió éxito pero sin datos para el RUT:", rut);
         setNotFoundRut(rut); 
         setSearchResult({ 
           exists: false, 
-          rut: rut,
+          rut: rut, // Este es el RUT combinado (ej: A58745862)
           isForeigner: isForeigner,
-          country: country 
+          pasaporte: originalPasaporte // Este es el DNI/Pasaporte (ej: A58745)
         }); 
       }
     } catch (err) {
-      if (err.status === 404 || err.message === 'Paciente no encontrado') {
+      if (err.status === 404) {
         setNotFoundRut(rut); 
         setSearchResult({
           exists: false, 
           rut: rut,
           isForeigner: isForeigner,
-          country: country
+          pasaporte: originalPasaporte
         }); 
       } else if (err.message.startsWith('SESSION_EXPIRED')) {
         setError('La sesión ha expirado. Por favor, inicie sesión de nuevo.');
@@ -142,26 +139,33 @@ const AgendaPage = () => {
     }
   };
 
-  // --- handleSaveNewPatient (CORREGIDO) ---
+
+  // ==========================================================
+  // --- handleSaveNewPatient (CON REDIRECCIÓN) ---
+  // ==========================================================
   const handleSaveNewPatient = async (patientData) => {
     setLoading(true);
     setError('');
     setNotFoundRut('');
     try {
-      // Idealmente, aquí también deberías "traducir" patientData a dtoPayload
-      const newPatient = await createNewPatient(patientData); // (Asegúrate que NewPatientForm envíe el DTO correcto)
-      setLoading(false);
-      setSearchResult({ 
-        exists: true, 
-        data: [newPatient.data],
-        isForeigner: searchResult.isForeigner,
-        country: searchResult.country
-      }); 
+      // 1. Crear el paciente
+      const newPatient = await createNewPatient(patientData); 
+      const newPatientId = newPatient.data.id;
+      // Obtenemos el nombre del mismo objeto que enviamos a la API
+      const patientName = patientData.nombre; 
+
+      MySwal.fire({
+        title: '¡Éxito!', 
+        text: 'Paciente guardado correctamente.', 
+        icon: 'success',
+        timer: 1100,
+        showConfirmButton: false
+      });
       
-      // --- 3. MANTENER ESTA ALERTA ---
-      MySwal.fire('¡Éxito!', 'Paciente guardado correctamente.', 'success');
-      
-      // (NO HAY REDIRECCIÓN AQUÍ)
+      // 2. Redirigir a la página de "Acciones"
+      navigate(`/acciones/${newPatientId}`, { 
+        state: { patientName: patientName } 
+      });
       
     } catch (err) {
       setLoading(false);
@@ -171,11 +175,10 @@ const AgendaPage = () => {
   };
 
 
-  // --- handleUpdatePatient (CORREGIDO) ---
+  // ==========================================================
+  // --- handleUpdatePatient (Lógica de Nacionalidad Corregida) ---
+  // ==========================================================
   const handleUpdatePatient = async (patientId, patientData) => {
-    // 'patientData' viene de PatientDataForm.
-    // Contiene: { ..., state: 101 (ComunaID), city: 13 (RegionID) }
-    
     setLoading(true);
     setError('');
     setNotFoundRut('');
@@ -189,63 +192,46 @@ const AgendaPage = () => {
     }
 
     try {
-      // 1. Determinar Nacionalidad (ISONUM)
       let nacionalidadId;
       if (searchResult?.isForeigner) {
-        if (searchResult.country && searchResult.country.value) {
-          nacionalidadId = parseNumber(searchResult.country.value); // Toma el 'isonum' (ej: 862)
-        }
+        const initialNacionalidad = searchResult.data[0]?.country_code;
+        nacionalidadId = parseNumber(initialNacionalidad);
+        
         if (!nacionalidadId) {
-           throw new Error(`Es extranjero pero no se pudo obtener el 'isonum' del país.`);
+             console.warn(`Extranjero ${rut} no tiene 'country_code' en la BD. Asumiendo 152.`);
+             nacionalidadId = 152; // Fallback a Chile
         }
       } else {
         nacionalidadId = 152; // ISONUM de Chile
       }
       
-      // 2. "Traducir" el objeto 'patientData' (formato DB) 
-      //    al objeto 'dtoPayload' (formato DTO)
       const dtoPayload = {
-        // Mapeo directo
         nombre: patientData.nombre,
         paterno: patientData.paterno,
         materno: patientData.materno,
         celular: patientData.celular,
+        telefono_casa: patientData.telefono_casa || null,
         direccion: patientData.direccion,
         sexo: patientData.sexo,
         correo: patientData.email, 
-        
-        // Enviar el string 'YYYY-MM-DD' directamente
         fecha_nacimiento: patientData.fecha_de_nacimiento, 
-        
-        // Mapeo de IDs (usando parseNumber)
         prevision: parseNumber(patientData.prevision),
         ocupacion: parseNumber(patientData.occupation),
-        
-        // Mapeo Invertido (DB -> DTO)
-        // (DB 'city' es Región, DB 'state' es Comuna)
-        region: parseNumber(patientData.city),   // DTO 'region' = DB 'city' (Región ID)
-        comuna: parseNumber(patientData.state),  // DTO 'comuna' = DB 'state' (Comuna ID)
-
-        // Lógica de Nacionalidad
-        nacionalidad: nacionalidadId, // (envía el ISONUM)
+        region: parseNumber(patientData.city),   // DTO 'region' = DB 'city'
+        comuna: parseNumber(patientData.state),  // DTO 'comuna' = DB 'state'
+        nacionalidad: nacionalidadId,
       };
 
-      // 3. Llamamos a la API con el payload DTO correcto
       await updatePatient(rut, dtoPayload); 
 
-      setLoading(false);
+      MySwal.fire({
+        title: '¡Éxito!', 
+        text: 'Datos actualizados correctamente.', 
+        icon: 'success',
+        timer: 1500,
+        showConfirmButton: false
+      });
 
-      // (Actualización de UI opcional, ya que vamos a redirigir)
-      const existingData = searchResult.data[0];
-      const mergedData = { ...existingData, ...patientData };
-      setSearchResult({ 
-        ...searchResult, 
-        data: [mergedData] 
-      }); 
-
-      // MySwal.fire('¡Éxito!', 'Datos actualizados correctamente.', 'success'); // <-- ELIMINADO
-
-      // --- 4. AÑADIR REDIRECCIÓN ---
       const patientName = dtoPayload.nombre;
       navigate(`/acciones/${dbId}`, { state: { patientName: patientName } });
     
@@ -257,6 +243,40 @@ const AgendaPage = () => {
   };
 
 
+  // ==========================================================
+  // --- CÁLCULO DE PROPS PARA NewPatientForm (LA CLAVE DEL BUG) ---
+  // ==========================================================
+  let newPatientProps = null;
+  if (searchResult?.exists === false) {
+    
+    const rutCompleto = searchResult.rut;       // ej: A58745862
+    const pasaporteOriginal = searchResult.pasaporte; // ej: "A58745"
+    const isForeigner = searchResult.isForeigner;
+    let nacionalidadId;
+
+    if (isForeigner) {
+      if (pasaporteOriginal && rutCompleto && rutCompleto.length > pasaporteOriginal.length) {
+        // Extraemos el ISONUM del final del RUT combinado
+        const isonum = rutCompleto.substring(pasaporteOriginal.length);
+        nacionalidadId = parseNumber(isonum); // ej: 862
+      } else {
+         console.error("Error: Extranjero pero no se pudo extraer ISONUM o pasaporte");
+         // Si 'pasaporte' es null/undefined, o es igual al rut, algo falló en la búsqueda
+         nacionalidadId = undefined; // Dejará el campo 'nacionalidad' vacío
+      }
+    } else {
+      nacionalidadId = 152; // ISONUM de Chile
+      // pasaporteOriginal ya es 'null'
+    }
+
+    // Estas son las props que NewPatientForm espera
+    newPatientProps = {
+      initialRut: rutCompleto,
+      initialPasaporte: pasaporteOriginal,
+      initialNacionalidad: nacionalidadId 
+    };
+  }
+  
   // --- RETURN (Renderizado) ---
   return (
     <div>
@@ -271,10 +291,9 @@ const AgendaPage = () => {
         />
       </Card>
 
-      {/* Mensajes de Carga y Errores */}
       {loading && <LoadingMessage>Procesando...</LoadingMessage>}
       {error && <ErrorMessage>{error}</ErrorMessage>}
-      {notFoundRut && !error && <NotFoundMessage>Paciente con RUT "{notFoundRut}" no encontrado.</NotFoundMessage>}
+      {notFoundRut && !error && <NotFoundMessage>Paciente con RUT/DNI "{notFoundRut}" no encontrado.</NotFoundMessage>}
 
       {/* Caso 1: Paciente SÍ existe */}
       {searchResult?.exists === true && (
@@ -282,19 +301,20 @@ const AgendaPage = () => {
           <PatientDataForm
             key={searchResult.data?.[0]?.id || 'edit-form'}
             initialData={searchResult.data} 
-            onSave={handleUpdatePatient} // <-- Llama a la función corregida
+            onSave={handleUpdatePatient}
           />
         </ResultCard>
       )}
 
-      {/* Caso 2: Paciente NO existe */}
-      {searchResult?.exists === false && (
+      {/* Caso 2: Paciente NO existe (CORREGIDO) */}
+      {/* Renderiza solo si 'newPatientProps' se calculó correctamente */}
+      {searchResult?.exists === false && newPatientProps && (
         <ResultCard>
           <NewPatientForm
-            key={searchResult.rut || 'new-form'}
-            initialRut={searchResult.rut}
-            isForeigner={searchResult.isForeigner}
-            country={searchResult.country}
+            key={newPatientProps.initialRut}
+            initialRut={newPatientProps.initialRut}
+            initialPasaporte={newPatientProps.initialPasaporte}
+            initialNacionalidad={newPatientProps.initialNacionalidad}
             onSave={handleSaveNewPatient}
           />
         </ResultCard>

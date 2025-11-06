@@ -124,8 +124,13 @@ const PatientSearchForm = ({ onSearch, resetTrigger }) => {
         identifierToSearch = rut + selectedCountry.value;
     }
 
+    let pasaporteValue = null;
+    if (isForeigner) {
+      pasaporteValue = rut; // el input del usuario se usa como pasaporte
+    }
+
     // 3. Llamar a onSearch con el identificador (modificado o no)
-    onSearch(identifierToSearch, isForeigner, selectedCountry);
+    onSearch(identifierToSearch, isForeigner, pasaporteValue);
   };
 
   return (

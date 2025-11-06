@@ -11,6 +11,7 @@ import DashboardPage from './pages/DashboardPage/DashboardPage';
 import AgendaPage from './pages/AgendaPage/AgendaPage';
 import AccionesPage from './pages/AccionesPage/AccionesPage'; // <-- 1. IMPORTAR
 import AgendamientoConsultaPage from './pages/AgendamientoConsultaPage/AgendamientoConsultaPage';
+import AgendamientoConfirmacionPage from './pages/AgendamientoConfirmacionPage/AgendamientoConfirmacionPage';
 
 // Estilos globales completos (Sin cambios)
 const GlobalStyle = createGlobalStyle`
@@ -83,6 +84,18 @@ function App() {
               <ProtectedRoute>
                 <MainLayout>
                   <AgendamientoConsultaPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* 2. Registrar la ruta de confirmación */}
+          <Route 
+            path="/agendamiento/confirmacion/:id" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <AgendamientoConfirmacionPage />
                 </MainLayout>
               </ProtectedRoute>
             } 
