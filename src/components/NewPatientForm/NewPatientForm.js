@@ -146,7 +146,7 @@ const NewPatientForm = ({ initialRut, initialPasaporte, initialNacionalidad, onS
     direccion: '',
     prevision: '',
     ocupacion: '',
-    conf_verifalia: 0,
+    conf_verifalia: 1, // 0 = no verificado, 1 = verificado
   });
   
   const [isVerifying, setIsVerifying] = useState(false);
