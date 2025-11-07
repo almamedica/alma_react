@@ -379,6 +379,7 @@ const AgendamientoConsultaPage = () => {
         patient: patientData,
         prestationName,
         branchName,
+        originPath: location.pathname,
       } 
     });
   };

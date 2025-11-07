@@ -6,7 +6,7 @@ import { Appointment } from '../../services/apiService';
 
 // --- ESTILOS ---
 const PageHeader = styled.div`
-  background-color: #FFA726;
+  background-color: #FFA726; /* Naranja */
   color: white;
   padding: 24px;
   margin-bottom: 24px;
@@ -79,8 +79,9 @@ const CommentArea = styled.textarea`
   width: 100%;
   &:focus {
     outline: none;
-    border-color: #4CAF50;
-    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.25);
+    /* --- ✨ CAMBIO 1: Color unificado a Naranja --- */
+    border-color: #FFA726; 
+    box-shadow: 0 0 0 3px rgba(255, 167, 38, 0.25);
   }
 `;
 
@@ -95,7 +96,7 @@ const FinalizeButton = styled.button`
   padding: 12px 30px;
   border-radius: 0.5rem;
   color: white;
-  background-color: #FFA726;
+  background-color: #FFA726; /* Naranja */
   border: none;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
@@ -130,7 +131,6 @@ const getFormattedDateTime = (date, time) => {
 const getSession = () => {
   const sessionJSON = localStorage.getItem('userSession');
   try {
-    // Parsea el JSON guardado en el login
     return sessionJSON ? JSON.parse(sessionJSON) : null;
   } catch (e) {
     console.error("Error parseando la sesión de usuario desde localStorage", e);
@@ -150,6 +150,10 @@ const AgendamientoConfirmacionPage = () => {
   const prestationName = initialState?.prestationName;
   const branchName = initialState?.branchName;
 
+  // --- ✨ CAMBIO 2: Leer la ruta de origen ---
+  // Si se pierde (ej: recarga), vuelve a 'acciones' como fallback seguro.
+  const originPath = initialState?.originPath || `/acciones/${patientId}`;
+
   // Estados locales
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
@@ -163,9 +167,10 @@ const AgendamientoConfirmacionPage = () => {
         text: 'El resumen de agendamiento se perdió. Por favor, seleccione la hora nuevamente.',
         icon: 'warning',
         confirmButtonText: 'Aceptar'
-      }).then(() => navigate(`/agendamiento/consulta/${patientId}`, { replace: true }));
+      }).then(() => navigate(originPath, { replace: true })); // <-- ✨ CAMBIO 3: Usar originPath
     }
-  }, [patientId, navigate, selectedSlot]);
+    // Añadir originPath a las dependencias
+  }, [patientId, navigate, selectedSlot, originPath]); 
 
   // Datos renderizados
   const rutPatient = patientDetails?.['Rut/DNI'] || 'Cargando...';
@@ -181,17 +186,9 @@ const AgendamientoConfirmacionPage = () => {
     setLoading(true);
     setError('');
 
-    // --- INICIO DE LA MODIFICACIÓN ---
-    
-    // 1. Obtener la sesión actual
     const session = getSession(); 
-    
-    // 2. Extraer el user_id de la sesión
-    // Basado en tu LoginPage, la sesión se guarda completa.
-    // Asumo que el user_id está en session.data.user_id
     const loggedInUserId = session?.data?.user_id; 
 
-    // 3. Validar que el user_id exista
     if (!loggedInUserId) {
       console.error("Error: No se encontró user_id en la sesión de localStorage.");
       await Swal.fire({
@@ -202,14 +199,12 @@ const AgendamientoConfirmacionPage = () => {
         confirmButtonColor: '#f27474',
       });
       setLoading(false);
-      navigate('/login', { replace: true }); // Envía al login si no hay ID
+      navigate('/login', { replace: true });
       return; 
     }
-    // --- FIN DE LA MODIFICACIÓN ---
 
     const platformId = process.env.REACT_APP_PLATFORM_ID || 6; 
 
-    // 1. Define el payload base (sin el comentario)
     const payload = {
       rut: rutPatient,
       professional_id: selectedSlot.professional_id,
@@ -218,16 +213,13 @@ const AgendamientoConfirmacionPage = () => {
       facility_id: selectedSlot.facility_id,
       categorie_id: selectedSlot.categorie_id,
       platform_id: platformId,
-      user_id: loggedInUserId, // <-- ¡CORREGIDO! Usamos el ID de la sesión
+      user_id: loggedInUserId,
     };
 
-   // 2. Limpia el comentario de espacios al inicio/final
-   const trimmedComment = comment.trim();
-
-   // 3. Añade la propiedad 'comment' SOLO si no está vacía
-   if (trimmedComment) {
-     payload.comment = trimmedComment;
-   }
+    const trimmedComment = comment.trim();
+    if (trimmedComment) {
+      payload.comment = trimmedComment;
+    }
 
     try {
       const response = await Appointment(payload);
@@ -249,7 +241,7 @@ const AgendamientoConfirmacionPage = () => {
           confirmButtonText: 'Volver',
           confirmButtonColor: '#f27474',
         });
-        navigate(`/agendamiento/consulta/${patientId}`, { replace: true });
+        navigate(originPath, { replace: true }); // <-- ✨ CAMBIO 4: Usar originPath
       }
     } catch (err) {
       console.error('Error al finalizar agendamiento:', err);
@@ -260,7 +252,7 @@ const AgendamientoConfirmacionPage = () => {
         confirmButtonText: 'Volver',
         confirmButtonColor: '#f27474',
       });
-      navigate(`/agendamiento/consulta/${patientId}`, { replace: true });
+      navigate(originPath, { replace: true }); // <-- ✨ CAMBIO 5: Usar originPath
     } finally {
       setLoading(false);
     }
