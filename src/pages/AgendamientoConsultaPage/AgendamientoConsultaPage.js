@@ -315,7 +315,9 @@ const AgendamientoConsultaPage = () => {
       return;
     }
     const slots = availabilitySlots.filter(slot => slot.date === selectedDate);
-    setSlotsForSelectedDay(slots);
+    // --- AÑADIR ESTA LÍNEA PARA ORDENAR ---
+    const sortedSlots = slots.sort((a, b) => a.hour.localeCompare(b.hour));
+    setSlotsForSelectedDay(sortedSlots);
   }, [selectedDate, availabilitySlots]);
 
   

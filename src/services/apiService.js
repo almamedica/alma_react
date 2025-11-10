@@ -204,46 +204,71 @@ export const createNewPatient = async (patientData) => {
 };
 
 export const updatePatient = async (rut, patientData) => {
-  const payload = {
-    nombre: patientData.nombre,
-    paterno: patientData.paterno,
-    materno: patientData.materno,
-    direccion: patientData.direccion,
-    correo: patientData.email ?? patientData.correo ?? "", // ✅ prioriza email
-    celular: patientData.celular,
-    telefono_casa: patientData.telefono_casa,
-    fecha_nacimiento: patientData.fecha_de_nacimiento ?? patientData.fecha_nacimiento ?? "", // ✅ toma cualquiera de los dos nombres
-    sexo: patientData.sexo,
-    prevision: Number(patientData.prevision ?? 1),
-    nacionalidad: Number(patientData.country_code ?? 152),
-    region: Number(patientData.state ?? 13),
-    comuna: Number(patientData.city ?? 101),
-    ocupacion: Number(patientData.occupation ?? 1),
-  };
+  const payload = {
+    nombre: patientData.nombre,
+    paterno: patientData.paterno,
+    materno: patientData.materno,
+    direccion: patientData.direccion,
+    correo: patientData.email ?? patientData.correo ?? "",
+    celular: patientData.celular,
+    telefono_casa: patientData.telefono_casa,
+    fecha_nacimiento: patientData.fecha_de_nacimiento ?? patientData.fecha_nacimiento ?? "",
+    sexo: patientData.sexo,
+    prevision: Number(patientData.prevision ?? 1),
+    nacionalidad: Number(patientData.country_code ?? 152),
+    region: Number(patientData.state ?? 13),
+    comuna: Number(patientData.city ?? 101),
+    ocupacion: Number(patientData.occupation ?? 1),
+  };
 
-  //console.log("🟢 Payload enviado al backend (updatePatient):", payload);
+  const response = await apiFetch(`/patients/${rut}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
 
-  const response = await apiFetch(`/patients/${rut}`, {
-    method: 'PUT',
-    body: JSON.stringify(payload),
-  });
+  return await response.json();
+};
 
+// =======================================================
+// --- ✨ NUEVA FUNCIÓN PARA EL BUSCADOR DE CITAS ---
+// =======================================================
+/**
+ * Llama al buscador de agendamientos (GET /appointments)
+ * @param {object} filters - Objeto con los filtros (rut, start, end, facility_id, professional_id)
+ */
+export const searchAppointments = async (filters) => {
+  // Construir los parámetros de consulta (Query Params)
+  const params = new URLSearchParams();
+
+  // Añadir solo los filtros que tienen valor
+  if (filters.rut) params.append('rut', filters.rut);
+  if (filters.start) params.append('start', filters.start);
+  if (filters.end) params.append('end', filters.end);
+  if (filters.facility_id) params.append('facility_id', filters.facility_id);
+  if (filters.professional_id) params.append('professional_id', filters.professional_id);
+
+  // Añadir el parámetro de plataforma (requisito de API) aquí 
+  // Se añadirá en CADA llamada a esta función, usando la variable de entorno
+  params.append('platform', process.env.REACT_APP_PLATFORM_ID);
+
+  // apiFetch maneja el /api_nestjs y el token
+  const response = await apiFetch(`/appointments?${params.toString()}`, { method: 'GET' });
   return await response.json();
 };
 
-// --- ✨ FUNCIÓN AÑADIDA (CRÍTICA) ---
+
 /**
- * Llama al endpoint de NestJS para confirmar la reserva de hora.
- * @param {object} payload - Datos del agendamiento (patientId, professionalId, date, hour, etc.)
- */
+ * Llama al endpoint de NestJS para confirmar la reserva de hora.
+ * @param {object} payload - Datos del agendamiento (patientId, professionalId, date, hour, etc.)
+ */
 export const Appointment = async (payload) => {
-  // Asumo un endpoint como '/appointments'. Ajusta si es diferente.
-  const response = await apiFetch(`/appointments`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-  // apiFetch ya maneja los errores HTTP, solo retornamos el JSON.
-  return await response.json();
+  // Asumo un endpoint como '/appointments'. Ajusta si es diferente.
+  const response = await apiFetch(`/appointments`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  // apiFetch ya maneja los errores HTTP, solo retornamos el JSON.
+  return await response.json();
 };
 // --- FIN FUNCIÓN AÑADIDA ---
 
@@ -281,10 +306,7 @@ export const verifyEmail = async (email, rut) => {
   }
 
   if (!rut) {
-    // Si el rut no está presente, no podremos llamar al endpoint de Nest.
-    // Puedes decidir si esto es un error fatal o solo un warning.
     console.warn('verifyEmail fue llamado sin un RUT/identifier. No se podrá actualizar el estado en NestJS.');
-    // Opcional: throw new Error('Se requiere RUT para verificar email.');
   }
 
   const formData = new FormData();
@@ -308,16 +330,11 @@ export const verifyEmail = async (email, rut) => {
       // 3. Si fue exitosa, llamar a NUESTRA API (NestJS)
       if (rut) {
         try {
-          // Llama a la nueva función que usa apiFetch
           await updateVerifaliaStatus(rut, 1); 
           console.log('Estado de Verifalia actualizado en NestJS con éxito.');
         
         } catch (apiError) {
-          // El email se verificó (Paso 1 OK), pero falló la actualización en Nest (Paso 3 Falló).
-          // El usuario debe ver el éxito, pero debemos registrar el error interno.
           console.error('Email verificado en Verifalia, pero falló al actualizar estado en NestJS:', apiError);
-          // NO relanzamos el error (no hacemos 'throw apiError'), 
-          // porque para el usuario, el email SÍ es válido.
         }
       }
       
@@ -348,7 +365,6 @@ export const getRegions = async () => {
 };
 
 export const getCommunesByRegion = async (regionId) => {
-  // Si no hay regionId, devolvemos un array vacío para evitar llamar a /communes/
   if (!regionId) {
     return { data: [] }; 
   }
@@ -366,15 +382,45 @@ export const getOccupations = async () => {
   return await response.json();
 };
 
+// =======================================================
+// --- ✨ NUEVAS FUNCIONES PARA LOS SELECTS DEL BUSCADOR ---
+// =======================================================
+
+/**
+ * Obtiene las sucursales para el formulario de búsqueda
+ * (Equivale a $search_facility de buscador.php)
+ */
+export const getFacilities = async () => {
+  const response = await apiFetch(`/facilities`, { method: 'GET' });
+  return await response.json();
+};
+
+/**
+ * Obtiene los profesionales filtrados por sucursal
+ * (Equivale a filtro_prov.php)
+ */
+export const getProvidersByFacility = async (facilityId) => {
+  // Si no hay ID o es 'n' (por la opción 'Todos' del PHP), devolvemos array vacío
+  if (!facilityId || facilityId === 'n') { 
+    return { data: [] }; 
+  }
+  const response = await apiFetch(`/providers/by-facility/${facilityId}`, { method: 'GET' });
+  return await response.json();
+};
+
+// =======================================================
+// --- FIN DE NUEVAS FUNCIONES ---
+// =======================================================
+
 export const getConsultationSpecialties = async () => {
   const response = await apiFetch(`/specialties/consultations`, { method: 'GET' });
   return await response.json();
 };
 
 export const getExamSpecialties = async () => {
-  // Llama al endpoint de exámenes que me indicaste
-  const response = await apiFetch(`/specialties/exams`, { method: 'GET' });
-  return await response.json();
+  // Llama al endpoint de exámenes que me indicaste
+  const response = await apiFetch(`/specialties/exams`, { method: 'GET' });
+  return await response.json();
 };
 
 /**
@@ -420,7 +466,13 @@ export const getAvailability = async (categorieId, age, facilityId) => {
   });
 
   // 3. Llamar a la API (apiFetch maneja el token y /api_nestjs)
-  // La URL final será: /api_nestjs/availability?categorie=...&age=...&facility=...
   const response = await apiFetch(`/availability?${params.toString()}`, { method: 'GET' });
   return await response.json();
+};
+
+//Obtiene los detalles de auditoría y paciente para el modal del buscador de citas
+export const getAppointmentDetails = async (eventId) => {
+  // Asegúrate de que el endpoint coincida con el que crees en NestJS
+  const response = await apiFetch(`/appointments/details/${eventId}`, { method: 'GET' });
+  return await response.json();
 };
