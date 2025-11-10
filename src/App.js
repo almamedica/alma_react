@@ -13,6 +13,7 @@ import AccionesPage from './pages/AccionesPage/AccionesPage'; // <-- 1. IMPORTAR
 import AgendamientoConsultaPage from './pages/AgendamientoConsultaPage/AgendamientoConsultaPage';
 import AgendamientoConfirmacionPage from './pages/AgendamientoConfirmacionPage/AgendamientoConfirmacionPage';
 import AgendamientoExamenPage from './pages/AgendamientoExamenPage/AgendamientoExamenPage';
+import BuscadorCitasPage from './pages/BuscadorCitasPage/BuscadorCitasPage';
 
 // Estilos globales completos (Sin cambios)
 const GlobalStyle = createGlobalStyle`
@@ -109,6 +110,17 @@ function App() {
               <ProtectedRoute>
                 <MainLayout>
                   <AgendamientoConfirmacionPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/buscador-citas" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>  
+                  <BuscadorCitasPage />
                 </MainLayout>
               </ProtectedRoute>
             } 
