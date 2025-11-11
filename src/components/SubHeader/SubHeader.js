@@ -98,7 +98,7 @@ const NavGroup = ({ group }) => {
       {isOpen && (
         <Dropdown>
           {group.items.map(item => (
-            <DropdownLink key={item.name} to={item.path} onClick={() => setIsOpen(false)}>
+            <DropdownLink key={item.name} to={item.path} onClick={() => setIsOpen(false)}end={item.path === '/agenda'}>
               {item.name}
             </DropdownLink>
           ))}
@@ -114,6 +114,7 @@ const SubHeader = () => {
       name: 'Agendamiento',
       items: [
         { name: 'Inicio (Datos Paciente)', path: '/agenda' },
+        { name: 'Capacidad Instalada', path: '/agenda/capacidad' },
         { name: 'Confirmación Paciente', path: '/confirmacion-paciente' },
         { name: 'Horas Anuladas', path: '/horas-anuladas' },
       ],

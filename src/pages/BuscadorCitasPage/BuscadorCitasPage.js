@@ -5,27 +5,53 @@ import {
   getFacilities,
   getProvidersByFacility,
   searchAppointments,
-  getAppointmentDetails // <-- ✨ 1. Importar la nueva función
+  getAppointmentDetails, // <-- ✨ 1. Importar la nueva función
 } from '../../services/apiService';
 import styled, { keyframes } from 'styled-components';
 import logoAlmaGrande from '../../assets/images/logo_alma_grande.png';
 import { formatApptStatus } from '../../utils/formatters.js';
 import { validateRut } from '../../utils/validation.js';
 
-// --- Estilos Básicos ---
+// --- ✨ 1. DEFINICIONES DE ESTILO MEJORADAS ---
+
+// --- Color de Tema ---
+const themeColor = '#005f73'; // Un verde azulado (teal) oscuro y elegante
+const themeColorHover = '#004c5c';
+
+// --- Función Helper para convertir HEX a RGBA (para el 'box-shadow') ---
+const hexToRgba = (hex, opacity) => {
+  let c;
+  if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+    c = hex.substring(1).split('');
+    if (c.length === 3) {
+      c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+    }
+    c = '0x' + c.join('');
+    return `rgba(${[(c >> 16) & 255, (c >> 8) & 255, c & 255].join(
+      ',',
+    )}, ${opacity})`;
+  }
+  throw new Error('Bad Hex');
+};
+
+// --- Estilos de Página y Tipografía ---
 const PageWrapper = styled.div`
   /* 1rem arriba, 2rem a los lados, 2rem abajo */
-  padding: 1rem 2rem 2rem 2rem; 
-  font-family: Arial, sans-serif;
+  padding: 1rem 2rem 2rem 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  background-color: #f4f7f6;
+  min-height: 100vh;
   position: relative; /* <--- Necesario para el overlay */
 `;
 
 const FormContainer = styled.form`
-  background: #f9f9f9;
-  border-radius: 8px;
+  background: #ffffff;
+  border-radius: 12px;
   padding: 24px;
   margin-bottom: 2rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+  border: 1px solid #eef0f2;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1.5rem;
@@ -35,57 +61,110 @@ const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  label { font-weight: bold; font-size: 0.9rem; color: #333; }
-  input, select { padding: 0.75rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+  label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #4a4a4a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  input,
+  select {
+    padding: 0.75rem;
+    border: 1px solid #dcdcdc;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus {
+      outline: none;
+      border-color: ${themeColor};
+      box-shadow: 0 0 0 3px ${hexToRgba(themeColor, 0.15)};
+    }
+  }
 `;
 
 const SubmitButton = styled.button`
   padding: 0.75rem 1.5rem;
-  background-color: #007bff;
+  background-color: ${themeColor};
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 1rem;
   font-weight: bold;
   grid-column: 1 / -1;
   justify-self: end;
-  &:hover { background-color: #0056b3; }
-  &:disabled { background-color: #a0a0a0; cursor: not-allowed; }
+  transition: background-color 0.2s, transform 0.1s;
+
+  &:hover {
+    background-color: ${themeColorHover};
+    transform: translateY(-1px);
+  }
+  &:disabled {
+    background-color: #a0a0a0;
+    cursor: not-allowed;
+    transform: none;
+  }
 `;
 
 // --- ESTILOS DE TABLA MEJORADOS ---
 const ResultsContainer = styled.div`
   background: #ffffff;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+  border: 1px solid #eef0f2;
   overflow-x: auto;
 `;
 
 const ResultsTable = styled.table`
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
   margin-top: 1rem;
   font-size: 0.9rem;
-  th, td { padding: 1rem 0.75rem; text-align: left; vertical-align: middle; }
+  
+  th, td {
+    padding: 1rem 0.75rem;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid #eef0f2;
+  }
+  
   th {
-    background-color: #f8f9fa;
+    background-color: #fcfcfd;
     font-weight: 600;
     font-size: 0.8rem;
-    color: #333;
+    color: #555;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 2px solid #dee2e6;
+    border-bottom: 2px solid #e0e0e0;
   }
-  td { border-bottom: 1px solid #dee2e6; color: #495057; }
-  tbody tr td:last-child { text-align: center; }
-  tbody tr:hover { background-color: #f1f1f1; }
+  
+  td {
+    color: #495057;
+  }
+  
+  tbody tr td:last-child {
+    text-align: center;
+  }
+  
+  tbody tr {
+     transition: background-color 0.15s ease-in-out;
+  }
+
+  tbody tr:hover {
+    background-color: #f9fbfd;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
 `;
 
 const InfoButton = styled.button`
-  background-color: #007bff;
+  background-color: ${themeColor};
   color: white;
   border: none;
   border-radius: 50%; /* Círculo perfecto */
@@ -99,10 +178,11 @@ const InfoButton = styled.button`
   font-style: italic;
   font-family: 'Georgia', serif;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.1s;
 
   &:hover {
-    background-color: #0056b3;
+    background-color: ${themeColorHover};
+    transform: scale(1.05);
   }
 `;
 
@@ -111,7 +191,7 @@ const ErrorMessage = styled.p`
   font-weight: bold;
 `;
 
-// --- ESTILOS DEL SPINNER ---
+// --- ESTILOS DEL SPINNER (SIN CAMBIOS) ---
 const spin = keyframes` 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } `;
 const LoadingOverlay = styled.div`
   position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -135,58 +215,69 @@ const SpinnerLogo = styled.img` width: 70px; height: auto; `;
 
 // --- ESTILOS PARA EL CHECKBOX --- 
 const CheckboxFormGroup = styled(FormGroup)`
-  /* Cambia la dirección a horizontal */
-  flex-direction: row; 
-  align-items: center; /* Alinea verticalmente */
-  
-  /* Se alinea con los otros campos que tienen label arriba */
-  padding-top: 1.9rem; /* Ajusta este valor si es necesario */
+  flex-direction: row;
+  align-items: center;
   gap: 0.5rem;
+  
+  /* Se alinea al final de la celda del grid, junto a los inputs */
+  align-self: flex-end;
+  padding-bottom: 0.75rem; /* Simula la altura del input */
 
   label {
-    margin-bottom: 0; /* Quita el margen inferior del label */
-    font-weight: normal; /* Lo hace ver como texto normal */
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: 0;
   }
 
   input {
-    width: auto; /* Evita que el checkbox ocupe 100% */
+    width: auto;
     height: auto;
-    margin-top: -2px; /* Ajuste fino vertical */
+    margin-top: -2px;
   }
 `;
 
 // --- ESTILOS PARA REACT-SELECT (BUSCADOR) ---
-const searchableSelectStyles = {
+const searchableSelectStyles = (themeColor) => ({
   control: (provided, state) => ({
     ...provided,
     width: '100%',
-    minHeight: 'calc(1.5em + 1.5rem + 2px)', // Ajusta la altura al de tus otros inputs
+    minHeight: 'calc(1.5em + 1.5rem + 2px)',
     fontSize: '1rem',
+    fontFamily: 'inherit',
     color: '#495057',
     backgroundColor: state.isDisabled ? '#e9ecef' : '#fff',
-    border: state.isFocused ? '1px solid #007bff' : '1px solid #ccc',
-    borderRadius: '4px',
-    boxShadow: state.isFocused ? '0 0 0 3px rgba(0, 123, 255, 0.25)' : 'none',
-    transition: 'border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out',
+    border: state.isFocused
+      ? `1px solid ${themeColor}`
+      : '1px solid #dcdcdc',
+    borderRadius: '6px',
+    boxShadow: state.isFocused
+      ? `0 0 0 3px ${hexToRgba(themeColor, 0.15)}`
+      : 'none',
+    transition: 'border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
     '&:hover': {
-      borderColor: state.isFocused ? '#007bff' : '#ccc',
+      borderColor: state.isFocused ? themeColor : '#ccc',
     },
     opacity: state.isDisabled ? '0.7' : '1',
   }),
   option: (provided, state) => ({
     ...provided,
+    fontFamily: 'inherit',
     fontSize: '1rem',
-    backgroundColor: state.isSelected ? '#007bff' : state.isFocused ? '#f0f0f0' : 'white',
+    backgroundColor: state.isSelected
+      ? themeColor
+      : state.isFocused
+      ? '#f0f0f0'
+      : 'white',
     color: state.isSelected ? 'white' : '#333',
     '&:active': {
-      backgroundColor: '#007bff',
+      backgroundColor: themeColor,
       color: 'white',
     },
   }),
-  menu: (provided) => ({ ...provided, borderRadius: '4px', zIndex: 5 }),
+  menu: (provided) => ({ ...provided, borderRadius: '6px', zIndex: 5, fontFamily: 'inherit' }),
   placeholder: (provided) => ({ ...provided, color: '#6c757d' }),
   singleValue: (provided) => ({ ...provided, color: '#495057' }),
-};
+});
 
 // --- ESTILOS PARA EL MODAL DE INFORMACIÓN (MODIFICADOS) ---
 const ModalOverlay = styled.div`
@@ -212,7 +303,12 @@ const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  h3 { margin: 0; font-size: 1.25rem; color: #333; font-weight: 600; }
+  h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: #222;
+    font-weight: 600;
+  }
 `;
 
 // ✨ ESTE ES EL BOTÓN QUE TE DABA EL WARNING
@@ -263,17 +359,17 @@ const ModalFooter = styled.div`
 `;
 
 const ModalCloseButton = styled.button`
-  background-color: #dc3545; /* Color Rojo */
+  background-color: #6c757d; /* Color gris */
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   padding: 0.6rem 1.2rem;
   font-size: 0.9rem;
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.2s;
   text-transform: uppercase;
-  &:hover { background-color: #c82333; }
+  &:hover { background-color: #5a6268; }
 `;
 
 // Spinner para el cuerpo del modal
@@ -599,7 +695,7 @@ const BuscadorCitasPage = () => {
             value={providerOptions.find(opt => opt.value === filters.providerId)}
             onChange={handleProviderChange}
             isDisabled={!filters.facilityId || filters.facilityId === 'n'}
-            styles={searchableSelectStyles}
+            styles={searchableSelectStyles(themeColor)}
             placeholder="Seleccione o busque..."
             noOptionsMessage={() => 'No se encontraron profesionales'}
           />
@@ -640,7 +736,7 @@ const BuscadorCitasPage = () => {
               options={countryOptions}
               value={countryOptions.find(opt => opt.value === filters.countryId)}
               onChange={handleCountryChange}
-              styles={searchableSelectStyles}
+              styles={searchableSelectStyles(themeColor)}
               placeholder="Seleccione o busque País..."
               noOptionsMessage={() => 'No se encontraron países'}
             />
@@ -802,7 +898,7 @@ const BuscadorCitasPage = () => {
                   </InfoSection>
                 </>
               ) : (
-                 /* --- Fallback: Si la API falla, muestra los datos básicos de la fila --- */
+                /* --- Fallback: Si la API falla, muestra los datos básicos de la fila --- */
                 <InfoSection>
                   <InfoRow><InfoLabel>RUT paciente:</InfoLabel><InfoValue>{modalData['Rut/DNI']}</InfoValue></InfoRow>
                   <InfoRow><InfoLabel>Nombre paciente:</InfoLabel><InfoValue>{`${modalData.fname || ''} ${modalData.lname || ''}`}</InfoValue></InfoRow>

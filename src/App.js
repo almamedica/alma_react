@@ -14,6 +14,7 @@ import AgendamientoConsultaPage from './pages/AgendamientoConsultaPage/Agendamie
 import AgendamientoConfirmacionPage from './pages/AgendamientoConfirmacionPage/AgendamientoConfirmacionPage';
 import AgendamientoExamenPage from './pages/AgendamientoExamenPage/AgendamientoExamenPage';
 import BuscadorCitasPage from './pages/BuscadorCitasPage/BuscadorCitasPage';
+import CapacidadInstaladaPage from './pages/CapacidadInstaladaPage/CapacidadInstaladaPage';
 
 // Estilos globales completos (Sin cambios)
 const GlobalStyle = createGlobalStyle`
@@ -98,6 +99,18 @@ function App() {
               <ProtectedRoute>
                 <MainLayout>
                   <AgendamientoExamenPage />
+                </MainLayout>
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* --- RUTA DE CAPACIDAD INSTALADA --- */}
+          <Route 
+            path="/agenda/capacidad" 
+            element={
+              <ProtectedRoute>
+                <MainLayout>
+                  <CapacidadInstaladaPage />
                 </MainLayout>
               </ProtectedRoute>
             } 

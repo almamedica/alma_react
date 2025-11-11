@@ -476,3 +476,33 @@ export const getAppointmentDetails = async (eventId) => {
   const response = await apiFetch(`/appointments/details/${eventId}`, { method: 'GET' });
   return await response.json();
 };
+
+
+/**
+ * Llama al endpoint de NestJS para CREAR Capacidad Instalada.
+ * @param {object} capacityData - El DTO (payload) con los datos del formulario.
+ */
+export const createCapacity = async (capacityData) => {
+  const response = await apiFetch(`/capacity`, { // Llama a POST /api_nestjs/capacity
+    method: 'POST',
+    body: JSON.stringify(capacityData),
+  });
+  return await response.json();
+};
+
+// Obtiene TODAS las especialidades (para el formulario de capacidad).
+export const getAllSpecialties = async () => {
+  // Asumo un nuevo endpoint. Ajústalo si es necesario.
+  const response = await apiFetch(`/specialties`, { method: 'GET' });
+  return await response.json();
+};
+
+// Obtiene los boxes filtrados por sucursal (facility).
+export const getBoxesByFacility = async (facilityId) => {
+  if (!facilityId) {
+    return { data: [] }; 
+  }
+  // Asumo un nuevo endpoint. Ajústalo si es necesario.
+  const response = await apiFetch(`/boxes/by-facility/${facilityId}`, { method: 'GET' });
+  return await response.json();
+};
